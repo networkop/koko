@@ -495,14 +495,14 @@ func MakeVeth(veth1 VEth, veth2 VEth) (err error) {
 
 	if veth1.NsName != "" {
 		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName1, err = RandomName()
+		tempLinkName1, err = RandomName(tempLinkName1)
 		if err != nil {
 			return
 		}
 	}
 	if veth2.NsName != "" {
 		//tempLinkName2 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName2, err = RandomName()
+		tempLinkName2, err = RandomName(tempLinkName2)
 		if err != nil {
 			return
 		}
@@ -520,9 +520,11 @@ func MakeVeth(veth1 VEth, veth2 VEth) (err error) {
 }
 
 // RandomName returns string "veth" with random prefix (hashed from entropy)
-func RandomName() (string, error) {
-	entropy := make([]byte, 4)
+func RandomName(seed string) (string, error) {
+	entropy := []byte(seed)
+
 	_, err := rand.Reader.Read(entropy)
+	log.Printf("Entropy = %s", entropy)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random link name: %v", err)
 	}
@@ -538,9 +540,9 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	if veth1.NsName == "" {
 		tempLinkName1 = veth1.LinkName
 	} else {
-		for i := 0; i < 100; i++ { // Trying 10 times to generate a random name
+		for i := 0; i < 10; i++ { // Trying 10 times to generate a random name
 
-			tempLinkName1, err := RandomName()
+			tempLinkName1, err := RandomName(tempLinkName1)
 			if err != nil {
 				return err
 			}
