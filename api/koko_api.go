@@ -113,7 +113,7 @@ func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 	err = netlink.LinkAdd(&vxlanconf)
 
 	if err != nil {
-		return fmt.Errorf("Failed to add vxlan %s: %v", devName, err)
+		return err
 	}
 	return nil
 }
