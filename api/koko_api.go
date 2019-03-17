@@ -4,13 +4,12 @@ Package api provides koko's connector funcitionlity as API.
 package api
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"os"
 	"syscall"
-	"time"
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
@@ -490,15 +489,17 @@ func (veth *VEth) RemoveVethLink() (err error) {
 // MakeVeth is top-level handler to create veth links given two VEth data
 // objects: veth1 and veth2.
 func MakeVeth(veth1 VEth, veth2 VEth) error {
-	rand.Seed(time.Now().UnixNano())
+	//rand.Seed(time.Now().UnixNano())
 	tempLinkName1 := veth1.LinkName
 	tempLinkName2 := veth2.LinkName
 
 	if veth1.NsName != "" {
-		tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
+		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
+		tempLinkName1 = fmt.Sprintf(RandomName())
 	}
 	if veth2.NsName != "" {
-		tempLinkName2 = fmt.Sprintf("koko%d", rand.Uint32())
+		//tempLinkName2 = fmt.Sprintf("koko%d", rand.Uint32())
+		tempLinkName2 = fmt.Sprintf(RandomName())
 	}
 
 	link1, link2, err := GetVethPair(tempLinkName1, tempLinkName2)
@@ -512,15 +513,25 @@ func MakeVeth(veth1 VEth, veth2 VEth) error {
 	return veth2.SetVethLink(link2)
 }
 
+// RandomName returns string "veth" with random prefix (hashed from entropy)
+func RandomName() (string, error) {
+	entropy := make([]byte, 4)
+	_, err := rand.Reader.Read(entropy)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random link name: %v", err)
+	}
+
+	return fmt.Sprintf("kok1%x", entropy), nil
+}
+
 // MakeVxLan makes vxlan interface and put it into container namespace
 func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	var link netlink.Link
 
-	rand.Seed(time.Now().UnixNano())
 	tempLinkName1 := veth1.LinkName
 
 	if veth1.NsName != "" {
-		tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
+		tempLinkName1 = fmt.Sprintf(RandomName())
 	}
 
 	log.Printf("Creating %s VXLAN link with temp name %s", veth1.LinkName, tempLinkName1)
