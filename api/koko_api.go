@@ -495,14 +495,14 @@ func MakeVeth(veth1 VEth, veth2 VEth) (err error) {
 
 	if veth1.NsName != "" {
 		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName1, err = RandomName(tempLinkName1)
+		tempLinkName1, err = RandomName(veth1.LinkName)
 		if err != nil {
 			return
 		}
 	}
 	if veth2.NsName != "" {
 		//tempLinkName2 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName2, err = RandomName(tempLinkName2)
+		tempLinkName2, err = RandomName(veth2.LinkName)
 		if err != nil {
 			return
 		}
@@ -542,7 +542,7 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	} else {
 		for i := 0; i < 10; i++ { // Trying 10 times to generate a random name
 
-			tempLinkName1, err := RandomName(tempLinkName1)
+			tempLinkName1, err := RandomName(veth1.LinkName)
 			if err != nil {
 				return err
 			}
