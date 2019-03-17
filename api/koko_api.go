@@ -5,6 +5,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"os"
@@ -521,6 +522,8 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	if veth1.NsName != "" {
 		tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
 	}
+
+	log.Printf("Creating %s VXLAN link with temp name %s", veth1.LinkName, tempLinkName1)
 
 	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
 		return fmt.Errorf("vxlan add failed: %v", err)
