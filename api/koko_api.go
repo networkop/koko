@@ -515,15 +515,23 @@ func MakeVeth(veth1 VEth, veth2 VEth) error {
 func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	var link netlink.Link
 
-	if err = AddVxLanInterface(vxlan, veth1.LinkName); err != nil {
+	rand.Seed(time.Now().UnixNano())
+	tempLinkName1 := veth1.LinkName
+
+	if veth1.NsName != "" {
+		tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
+	}
+
+	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
 		return fmt.Errorf("vxlan add failed: %v", err)
 	}
 
-	if link, err = netlink.LinkByName(veth1.LinkName); err != nil {
-		return fmt.Errorf("Cannot get %s: %v", veth1.LinkName, err)
+	if link, err = netlink.LinkByName(tempLinkName1); err != nil {
+		return fmt.Errorf("Cannot get %s: %v", tempLinkName1, err)
 	}
 
 	if err = veth1.SetVethLink(link); err != nil {
+		netlink.LinkDel(link)
 		return fmt.Errorf("Cannot add IPaddr/netns failed: %v", err)
 	}
 
