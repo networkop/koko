@@ -535,32 +535,18 @@ func RandomName(seed string) (string, error) {
 // MakeVxLan makes vxlan interface and put it into container namespace
 func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 	var link netlink.Link
-	var tempLinkName1 string
+	tempLinkName1 := veth1.LinkName
 
-	if veth1.NsName == "" {
-		tempLinkName1 = veth1.LinkName
-	} else {
-		for i := 0; i < 10; i++ { // Trying 10 times to generate a random name
-
-			tempLinkName1, err := RandomName(veth1.LinkName)
-			if err != nil {
-				return err
-			}
-
-			log.Printf("Creating %s VXLAN link with temp name %s", veth1.LinkName, tempLinkName1)
-
-			err = AddVxLanInterface(vxlan, tempLinkName1)
-			switch {
-			case err == nil:
-				break
-
-			case os.IsExist(err):
-				continue
-
-			default:
-				return fmt.Errorf("vxlan add failed: %v", err)
-			}
+	if veth1.NsName != "" {
+		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
+		tempLinkName1, err = RandomName(veth1.LinkName)
+		if err != nil {
+			return
 		}
+	}
+
+	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
+		return fmt.Errorf("vxlan add failed: %v", err)
 	}
 
 	if link, err = netlink.LinkByName(tempLinkName1); err != nil {
