@@ -89,39 +89,6 @@ func GetVethPair(name1 string, name2 string) (link1 netlink.Link,
 	return
 }
 
-func compareVxlan(v1, v2 *netlink.Vxlan) string {
-
-	if v1.VxlanId != v2.VxlanId {
-		return fmt.Sprintf("vni: %v vs %v", v1.VxlanId, v2.VxlanId)
-	}
-
-	if v1.VtepDevIndex > 0 && v2.VtepDevIndex > 0 && v1.VtepDevIndex != v2.VtepDevIndex {
-		return fmt.Sprintf("vtep (external) interface: %v vs %v", v1.VtepDevIndex, v2.VtepDevIndex)
-	}
-
-	if len(v1.SrcAddr) > 0 && len(v2.SrcAddr) > 0 && !v1.SrcAddr.Equal(v2.SrcAddr) {
-		return fmt.Sprintf("vtep (external) IP: %v vs %v", v1.SrcAddr, v2.SrcAddr)
-	}
-
-	if len(v1.Group) > 0 && len(v2.Group) > 0 && !v1.Group.Equal(v2.Group) {
-		return fmt.Sprintf("group address: %v vs %v", v1.Group, v2.Group)
-	}
-
-	if v1.L2miss != v2.L2miss {
-		return fmt.Sprintf("l2miss: %v vs %v", v1.L2miss, v2.L2miss)
-	}
-
-	if v1.L3miss != v2.L3miss {
-		return fmt.Sprintf("l3miss: %v vs %v", v1.L3miss, v2.L3miss)
-	}
-
-	if v1.Port > 0 && v2.Port > 0 && v1.Port != v2.Port {
-		return fmt.Sprintf("port: %v vs %v", v1.Port, v2.Port)
-	}
-
-	return ""
-}
-
 // AddVxLanInterface creates VxLan interface by given vxlan object
 func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 	var parentIF netlink.Link
@@ -130,7 +97,7 @@ func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 		return fmt.Errorf("Failed to get %s: %v", vxlan.ParentIF, err)
 	}
 
-	vxlanconf := &netlink.Vxlan{
+	vxlanconf := netlink.Vxlan{
 		LinkAttrs: netlink.LinkAttrs{
 			Name:   devName,
 			TxQLen: 1000,
@@ -143,37 +110,16 @@ func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 		L2miss:       true,
 		L3miss:       true,
 	}
-	err = netlink.LinkAdd(vxlanconf)
+	err = netlink.LinkAdd(&vxlanconf)
 
-	if os.IsExist(err) {
-		existing, err := netlink.LinkByName(devName)
-		if err != nil {
-			return fmt.Errorf("File exists but link %s not found", devName)
-		}
-
-		existingVxlan, ok := existing.(*netlink.Vxlan)
-		if ok {
-			return fmt.Errorf("Existing link %s is not a VXLAN", devName)
-		}
-
-		incompat := compareVxlan(vxlanconf, existingVxlan)
-		if incompat == "" {
+	if err != nil {
+		switch {
+		case os.IsExist(err):
+			log.Printf("Vxlan link already exists, doing nothing for: %v", vxlanconf)
 			return nil
+		default:
+			return err
 		}
-
-		// delete existing
-		log.Printf("%q already exists with incompatable configuration: %v; recreating device", vxlanconf.Name, incompat)
-		if err = netlink.LinkDel(existing); err != nil {
-			return fmt.Errorf("failed to delete interface: %v", err)
-		}
-
-		// create new
-		if err = netlink.LinkAdd(vxlanconf); err != nil {
-			return fmt.Errorf("failed to create vxlan interface: %v", err)
-		}
-
-	} else if err != nil {
-		return err
 	}
 	return nil
 }
@@ -610,7 +556,6 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 		return fmt.Errorf("vxlan add failed: %v", err)
 	}
 
-	log.Printf("Attempting to find link with temp name %s", tempLinkName1)
 	if link, err = netlink.LinkByName(tempLinkName1); err != nil {
 		return fmt.Errorf("Cannot get %s: %v", tempLinkName1, err)
 	}
