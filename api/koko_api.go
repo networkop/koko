@@ -146,13 +146,14 @@ func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 	err = netlink.LinkAdd(vxlanconf)
 
 	if os.IsExist(err) {
-		existing, err := netlink.LinkByName(vxlanconf.Name)
+		existing, err := netlink.LinkByName(devName)
 		if err != nil {
-			return err
+			return fmt.Errorf("File exists but link %s not found", devName)
 		}
+
 		existingVxlan, ok := existing.(*netlink.Vxlan)
 		if ok {
-			return fmt.Errorf("Existing link is not a VXLAN")
+			return fmt.Errorf("Existing link %s is not a VXLAN", devName)
 		}
 
 		incompat := compareVxlan(vxlanconf, existingVxlan)
