@@ -6,7 +6,6 @@ package api
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"syscall"
@@ -113,14 +112,9 @@ func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
 	err = netlink.LinkAdd(&vxlanconf)
 
 	if err != nil {
-		switch {
-		case os.IsExist(err):
-			log.Printf("Vxlan link already exists, doing nothing for: %v", vxlanconf)
-			return nil
-		default:
-			return err
-		}
+		return fmt.Errorf("Failed to add vxlan %s: %v", devName, err)
 	}
+
 	return nil
 }
 
@@ -530,7 +524,6 @@ func RandomName() (string, error) {
 	entropy := make([]byte, 4)
 
 	_, err := rand.Reader.Read(entropy)
-	log.Printf("Entropy = %s", entropy)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random link name: %v", err)
 	}
@@ -551,7 +544,6 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 		}
 	}
 
-	log.Printf("Attempting to add a %s VXLAN link with temp name %s", veth1.LinkName, tempLinkName1)
 	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
 		return fmt.Errorf("vxlan add failed: %v", err)
 	}
