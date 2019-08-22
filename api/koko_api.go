@@ -495,17 +495,11 @@ func MakeVeth(veth1 VEth, veth2 VEth) (err error) {
 
 	if veth1.NsName != "" {
 		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName1, err = RandomName()
-		if err != nil {
-			return
-		}
+		tempLinkName1 = RandomName()
 	}
 	if veth2.NsName != "" {
 		//tempLinkName2 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName2, err = RandomName()
-		if err != nil {
-			return
-		}
+		tempLinkName2 = RandomName()
 	}
 
 	link1, link2, err := GetVethPair(tempLinkName1, tempLinkName2)
@@ -520,15 +514,9 @@ func MakeVeth(veth1 VEth, veth2 VEth) (err error) {
 }
 
 // RandomName returns string "veth" with random prefix (hashed from entropy)
-func RandomName() (string, error) {
-	entropy := make([]byte, 4)
-
-	_, err := rand.Reader.Read(entropy)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate random link name: %v", err)
-	}
-
-	return fmt.Sprintf("koko%x", entropy), nil
+func RandomName() string {
+	rand.Seed(time.Now().UnixNano())
+	return fmt.Sprintf("koko%d", rand.Uint32())
 }
 
 // MakeVxLan makes vxlan interface and put it into container namespace
@@ -538,10 +526,7 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 
 	if veth1.NsName != "" {
 		//tempLinkName1 = fmt.Sprintf("koko%d", rand.Uint32())
-		tempLinkName1, err = RandomName()
-		if err != nil {
-			return
-		}
+		tempLinkName1 = RandomName()
 	}
 
 	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
