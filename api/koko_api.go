@@ -4,16 +4,18 @@ Package api provides koko's connector funcitionlity as API.
 package api
 
 import (
-	"crypto/rand"
+	//"crypto/rand"
 	"fmt"
 	"net"
 	"os"
 	"syscall"
+	"log"
 
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
 	"github.com/vishvananda/netlink"
-
+	"math/rand"
+	"time"
 	"github.com/docker/docker/client"
 	"golang.org/x/net/context"
 )
@@ -90,11 +92,13 @@ func GetVethPair(name1 string, name2 string) (link1 netlink.Link,
 
 // AddVxLanInterface creates VxLan interface by given vxlan object
 func AddVxLanInterface(vxlan VxLan, devName string) (err error) {
+	log.Printf("[KOKO] Adding a Vxlan link %s", devName)
 	var parentIF netlink.Link
 
 	if parentIF, err = netlink.LinkByName(vxlan.ParentIF); err != nil {
 		return fmt.Errorf("Failed to get %s: %v", vxlan.ParentIF, err)
 	}
+
 
 	vxlanconf := netlink.Vxlan{
 		LinkAttrs: netlink.LinkAttrs{
@@ -529,9 +533,31 @@ func MakeVxLan(veth1 VEth, vxlan VxLan) (err error) {
 		tempLinkName1 = RandomName()
 	}
 
+	//retry := 5
+	//for retry > 0 {
+	//	if err = AddVxLanInterface(vxlan, tempLinkName1, veth1.NsName); err != nil {
+	//		if os.IsExist(err) {
+	//			log.Printf("Vxlan link %s exists. Retrying %d time", tempLinkName1, retry)
+	//			retry = retry - 1
+	//			veth1.RemoveVethLink()
+	//		} else {
+	//			return fmt.Errorf("vxlan add failed: %v", err)
+	//		}
+	//	} else {
+	//		break;
+	//	}
+	//}
+
 	if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
-		return fmt.Errorf("vxlan add failed: %v", err)
+		if err != nil {
+			log.Printf("[KOKO] Caught error %+v. Retrying...", err)
+			veth1.RemoveVethLink()
+			if err = AddVxLanInterface(vxlan, tempLinkName1); err != nil {
+				return fmt.Errorf("vxlan add failed: %v", err)
+			}
+		}
 	}
+	
 
 	if link, err = netlink.LinkByName(tempLinkName1); err != nil {
 		return fmt.Errorf("Cannot get %s: %v", tempLinkName1, err)
